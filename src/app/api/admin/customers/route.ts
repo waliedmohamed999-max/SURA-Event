@@ -54,6 +54,7 @@ export async function GET(request: Request) {
       email: a.applicant.email,
       mobile: a.applicant.mobile,
       crNumber: a.crNumber,
+      ownerMobile: a.ownerMobile,
       nationalAddress: a.nationalAddress,
       shopNumber: a.shop.shopNumber,
       submittedAt: a.submittedAt,

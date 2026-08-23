@@ -10,7 +10,13 @@ import path from "path";
  * the filesystem.
  */
 
-const STORAGE_ROOT = path.join(process.cwd(), "storage", "uploads");
+// STORAGE_ROOT_DIR lets deployments point uploads at a persistent volume
+// (e.g. a Render Disk mounted at /var/data) — without it, uploaded files
+// live on the container's ephemeral filesystem and are lost on every
+// redeploy/restart. Defaults to a local folder for dev.
+const STORAGE_ROOT = process.env.STORAGE_ROOT_DIR
+  ? path.resolve(process.env.STORAGE_ROOT_DIR)
+  : path.join(process.cwd(), "storage", "uploads");
 
 export const ALLOWED_MIME_TYPES = new Set([
   "application/pdf",

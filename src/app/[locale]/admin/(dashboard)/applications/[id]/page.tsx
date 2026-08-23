@@ -117,6 +117,7 @@ export default function AdminApplicationDetailPage({ params }: { params: Promise
             <Field label={t("website")} value={app.website ?? "—"} />
             <Field label={t("instagram")} value={app.instagram ?? "—"} />
             <Field label={t("crNumber")} value={app.crNumber ?? "—"} />
+            <Field label={t("ownerMobile")} value={app.ownerMobile ?? "—"} />
             <Field label={t("nationalAddress")} value={app.nationalAddress ?? "—"} full />
           </Section>
 

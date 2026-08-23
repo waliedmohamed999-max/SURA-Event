@@ -12,6 +12,7 @@ interface CustomerRow {
   email: string;
   mobile: string;
   crNumber: string | null;
+  ownerMobile: string | null;
   nationalAddress: string | null;
   shopNumber: string;
   submittedAt: string;
@@ -87,7 +88,8 @@ export default function AdminCustomersPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-xs" dir="ltr">
-                  {c.crNumber ?? "—"}
+                  <div>{c.crNumber ?? "—"}</div>
+                  {c.ownerMobile && <div className="text-muted">{c.ownerMobile}</div>}
                 </td>
                 <td className="px-4 py-3">{c.shopNumber}</td>
                 <td className="px-4 py-3">
