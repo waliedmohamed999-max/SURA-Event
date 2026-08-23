@@ -38,6 +38,9 @@ export default function AdminApplicationsPage() {
         setRows(data.applications ?? []);
         setTotalPages(data.pagination?.totalPages ?? 1);
       })
+      .catch((err) => {
+        if (err?.name !== "AbortError") throw err;
+      })
       .finally(() => setLoading(false));
 
     return () => controller.abort();

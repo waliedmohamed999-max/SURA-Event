@@ -8,6 +8,9 @@ import {
   ScrollText,
   Users,
   LogOut,
+  Tag,
+  BarChart3,
+  Bell,
 } from "lucide-react";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/site/LanguageSwitcher";
@@ -23,6 +26,9 @@ export function AdminShell({ user, children }: { user: SessionUser; children: Re
     { href: "/admin", label: t("dashboard"), icon: LayoutDashboard, show: can(user.role, "dashboard:read") },
     { href: "/admin/applications", label: t("applications"), icon: FileText, show: can(user.role, "applications:read") },
     { href: "/admin/shops/map", label: t("mapEditor"), icon: MapIcon, show: can(user.role, "shops:read") },
+    { href: "/admin/categories", label: t("categories"), icon: Tag, show: can(user.role, "categories:read") },
+    { href: "/admin/reports", label: t("reports"), icon: BarChart3, show: can(user.role, "reports:read") },
+    { href: "/admin/notifications", label: t("notifications"), icon: Bell, show: can(user.role, "audit:read") },
     { href: "/admin/audit-logs", label: t("auditLogs"), icon: ScrollText, show: can(user.role, "audit:read") },
     { href: "/admin/users", label: t("users"), icon: Users, show: can(user.role, "users:read") },
   ];

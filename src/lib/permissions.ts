@@ -7,6 +7,9 @@ export type Permission =
   | "shops:read"
   | "shops:write"
   | "map:edit"
+  | "categories:read"
+  | "categories:write"
+  | "reports:read"
   | "audit:read"
   | "users:read"
   | "users:write";
@@ -19,6 +22,9 @@ const ROLE_PERMISSIONS: Record<AdminRole, Permission[]> = {
     "shops:read",
     "shops:write",
     "map:edit",
+    "categories:read",
+    "categories:write",
+    "reports:read",
     "audit:read",
     "users:read",
     "users:write",
@@ -30,10 +36,13 @@ const ROLE_PERMISSIONS: Record<AdminRole, Permission[]> = {
     "shops:read",
     "shops:write",
     "map:edit",
+    "categories:read",
+    "categories:write",
+    "reports:read",
     "audit:read",
   ],
-  leasing_officer: ["dashboard:read", "applications:read", "applications:write", "shops:read"],
-  viewer: ["dashboard:read", "applications:read", "shops:read", "audit:read"],
+  leasing_officer: ["dashboard:read", "applications:read", "applications:write", "shops:read", "categories:read"],
+  viewer: ["dashboard:read", "applications:read", "shops:read", "categories:read", "reports:read", "audit:read"],
 };
 
 export function can(role: AdminRole, permission: Permission): boolean {
