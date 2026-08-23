@@ -1,4 +1,4 @@
-// Global Village Bahrain — Shop Leasing Platform
+// Asia Road — Global Village Dammam — Shop Leasing Platform
 // Prisma schema. Map geometry (ShopGeometry) is kept deliberately separate from
 // business data (Shop) so the map editor can move/resize shapes without touching
 // pricing, status, or application history.
@@ -48,6 +48,7 @@ enum DocumentType {
   brand_profile
   product_catalog
   identity_document
+  tax_certificate
   other
 }
 
@@ -55,6 +56,28 @@ enum RentalStatus {
   active
   completed
   terminated
+}
+
+enum NotificationType {
+  application_submitted
+  application_received
+  documents_required
+  application_approved
+  application_rejected
+  shop_reserved
+  rental_completed
+}
+
+enum NotificationChannel {
+  email
+  whatsapp
+  sms
+}
+
+enum NotificationStatus {
+  sent
+  failed
+  logged_only
 }
 
 // ---------------------------------------------------------------------------
@@ -173,6 +196,8 @@ model Application {
   website                 String?
   instagram               String?
   crNumber                String?
+  nationalAddress         String?
+  ownerMobile             String? // the CR owner's own mobile — distinct from the applicant's mobile above
 
   // Shop requirements
   preferredRentalPeriod   String?
@@ -188,9 +213,10 @@ model Application {
   submittedAt              DateTime          @default(now())
   updatedAt                DateTime          @updatedAt
 
-  documents  Document[]
-  rentals    Rental[]
-  auditLogs  AuditLog[]
+  documents     Document[]
+  rentals       Rental[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
 
   @@index([shopId])
   @@index([status])
@@ -284,4 +310,25 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@map("audit_logs")
+}
+
+// Notification architecture: email is the only channel actually wired up to
+// send today (SMTP if configured, otherwise logged here only — see
+// src/lib/notifications.ts). whatsapp/sms exist on the enum so a future
+// transport can be added without a schema change.
+model Notification {
+  id            String               @id @default(cuid())
+  type          NotificationType
+  channel       NotificationChannel  @default(email)
+  recipient     String
+  subject       String
+  body          String
+  status        NotificationStatus
+  errorMessage  String?
+  applicationId String?
+  application   Application?         @relation(fields: [applicationId], references: [id])
+  createdAt     DateTime             @default(now())
+
+  @@index([applicationId])
+  @@map("notifications")
 }

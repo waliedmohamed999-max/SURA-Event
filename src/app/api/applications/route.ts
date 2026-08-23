@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createApplicationSchema } from "@/lib/validation";
 import { atomicShopStatusUpdate } from "@/lib/shop-status";
 import { generateApplicationNumber, APPLICATION_NUMBER_MAX_RETRIES } from "@/lib/application-number";
+import { notify } from "@/lib/notifications";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -71,6 +72,8 @@ export async function POST(request: Request) {
             website: data.website || null,
             instagram: data.instagram || null,
             crNumber: data.crNumber || null,
+            nationalAddress: data.nationalAddress || null,
+            ownerMobile: data.ownerMobile || null,
             preferredRentalPeriod: data.preferredRentalPeriod || null,
             staffCount: data.staffCount ?? null,
             additionalRequirements: data.additionalRequirements || null,
@@ -91,7 +94,7 @@ export async function POST(request: Request) {
           },
         });
 
-        return { kind: "ok" as const, application };
+        return { kind: "ok" as const, application, shopNumber: shop.shopNumber };
       });
 
       if (result.kind === "not_found") {
@@ -103,6 +106,18 @@ export async function POST(request: Request) {
           { status: 409 }
         );
       }
+
+      // Fire-and-forget-ish: outside the DB transaction (sending an email
+      // should never roll back a successful application), but still
+      // awaited so the Notification log entry exists before we respond.
+      await notify({
+        type: "application_submitted",
+        applicationId: result.application.id,
+        recipientEmail: data.email,
+        recipientName: data.fullName,
+        applicationNumber: result.application.applicationNumber,
+        shopNumber: result.shopNumber,
+      }).catch((err) => console.error("Failed to send application_submitted notification", err));
 
       return NextResponse.json(
         {

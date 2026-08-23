@@ -3,7 +3,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-guard";
 import { atomicShopStatusUpdate } from "@/lib/shop-status";
+import { notify } from "@/lib/notifications";
+import { REQUIRED_DOCUMENT_TYPES } from "@/lib/validation";
 import type { ShopStatus } from "@/generated/prisma/enums";
+import type { NotificationType } from "@/generated/prisma/enums";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdmin("applications:read");
@@ -93,6 +96,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         break;
       }
       case "approve": {
+        const existingDocs = await tx.document.findMany({ where: { applicationId: id }, select: { type: true } });
+        const presentTypes = new Set(existingDocs.map((d) => d.type));
+        const missingTypes = REQUIRED_DOCUMENT_TYPES.filter((t) => !presentTypes.has(t));
+        if (missingTypes.length > 0) {
+          return { kind: "missing_documents" as const, missingTypes };
+        }
+
         await tx.application.update({
           where: { id },
           data: { status: "approved", internalNotes: input.notes ?? application.internalNotes },
@@ -182,5 +192,35 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (result.kind === "not_found") {
     return NextResponse.json({ error: "Application not found" }, { status: 404 });
   }
+  if (result.kind === "missing_documents") {
+    return NextResponse.json(
+      {
+        error: `Cannot approve: missing required document(s): ${result.missingTypes.join(", ")}.`,
+        code: "MISSING_DOCUMENTS",
+        missingTypes: result.missingTypes,
+      },
+      { status: 422 }
+    );
+  }
+
+  const notificationByAction: Partial<Record<typeof input.action, NotificationType>> = {
+    request_documents: "documents_required",
+    approve: "application_approved",
+    reject: "application_rejected",
+    mark_rented: "rental_completed",
+  };
+  const notificationType = notificationByAction[input.action];
+  if (notificationType && result.application) {
+    const app = result.application;
+    await notify({
+      type: notificationType,
+      applicationId: app.id,
+      recipientEmail: app.applicant.email,
+      recipientName: app.applicant.fullName,
+      applicationNumber: app.applicationNumber,
+      shopNumber: app.shop.shopNumber,
+    }).catch((err) => console.error(`Failed to send ${notificationType} notification`, err));
+  }
+
   return NextResponse.json({ application: result.application });
 }

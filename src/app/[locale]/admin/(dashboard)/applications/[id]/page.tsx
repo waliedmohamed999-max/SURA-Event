@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, use } from "react";
 import { useTranslations } from "next-intl";
 import { Download } from "lucide-react";
+import { REQUIRED_DOCUMENT_TYPES } from "@/lib/validation";
 
 interface ApplicationDetail {
   id: string;
@@ -14,6 +15,8 @@ interface ApplicationDetail {
   website: string | null;
   instagram: string | null;
   crNumber: string | null;
+  nationalAddress: string | null;
+  ownerMobile: string | null;
   preferredRentalPeriod: string | null;
   staffCount: number | null;
   additionalRequirements: string | null;
@@ -42,6 +45,7 @@ export default function AdminApplicationDetailPage({ params }: { params: Promise
   const [app, setApp] = useState<ApplicationDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     fetch(`/api/admin/applications/${id}`)
@@ -55,12 +59,18 @@ export default function AdminApplicationDetailPage({ params }: { params: Promise
 
   async function runAction(action: string) {
     setBusy(true);
+    setActionError(null);
     try {
-      await fetch(`/api/admin/applications/${id}`, {
+      const res = await fetch(`/api/admin/applications/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, notes: notes || undefined }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setActionError(data?.error ?? "Action failed.");
+        return;
+      }
       setNotes("");
       load();
     } finally {
@@ -69,6 +79,9 @@ export default function AdminApplicationDetailPage({ params }: { params: Promise
   }
 
   if (!app) return <p className="text-sm text-muted">{t("loading")}</p>;
+
+  const presentDocTypes = new Set(app.documents.map((d) => d.type));
+  const missingDocTypes = REQUIRED_DOCUMENT_TYPES.filter((type) => !presentDocTypes.has(type));
 
   return (
     <div className="space-y-6">
@@ -104,6 +117,7 @@ export default function AdminApplicationDetailPage({ params }: { params: Promise
             <Field label={t("website")} value={app.website ?? "—"} />
             <Field label={t("instagram")} value={app.instagram ?? "—"} />
             <Field label={t("crNumber")} value={app.crNumber ?? "—"} />
+            <Field label={t("nationalAddress")} value={app.nationalAddress ?? "—"} full />
           </Section>
 
           <Section title={t("requirementsSection")}>
@@ -113,8 +127,15 @@ export default function AdminApplicationDetailPage({ params }: { params: Promise
           </Section>
 
           <Section title={t("documentsSection")}>
+            {missingDocTypes.length > 0 && (
+              <p className="sm:col-span-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
+                {t("missingDocumentsWarning", {
+                  types: missingDocTypes.map((type) => t(`docType.${type}`)).join(", "),
+                })}
+              </p>
+            )}
             {app.documents.length === 0 && <p className="text-sm text-muted">{t("noDocuments")}</p>}
-            <ul className="space-y-2">
+            <ul className="space-y-2 sm:col-span-2">
               {app.documents.map((doc) => (
                 <li key={doc.id} className="flex items-center justify-between rounded-lg bg-background px-3 py-2 text-sm">
                   <span>
@@ -162,17 +183,21 @@ export default function AdminApplicationDetailPage({ params }: { params: Promise
               className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none"
             />
             <div className="mt-3 flex flex-col gap-2">
-              {ACTIONS.filter((a) => a.visibleFor.includes(app.status as never)).map((a) => (
-                <button
-                  key={a.action}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => runAction(a.action)}
-                  className="rounded-full bg-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-                >
-                  {t(`action.${a.action}`)}
-                </button>
-              ))}
+              {ACTIONS.filter((a) => a.visibleFor.includes(app.status as never)).map((a) => {
+                const blockedByDocs = a.action === "approve" && missingDocTypes.length > 0;
+                return (
+                  <button
+                    key={a.action}
+                    type="button"
+                    disabled={busy || blockedByDocs}
+                    title={blockedByDocs ? t("missingDocumentsWarning", { types: missingDocTypes.map((type) => t(`docType.${type}`)).join(", ") }) : undefined}
+                    onClick={() => runAction(a.action)}
+                    className="rounded-full bg-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                  >
+                    {t(`action.${a.action}`)}
+                  </button>
+                );
+              })}
               <button
                 type="button"
                 disabled={busy || !notes}
@@ -182,6 +207,7 @@ export default function AdminApplicationDetailPage({ params }: { params: Promise
                 {t("action.note")}
               </button>
             </div>
+            {actionError && <p className="mt-3 rounded-lg bg-red-50 p-2 text-xs text-red-700">{actionError}</p>}
           </div>
 
           {app.internalNotes && (

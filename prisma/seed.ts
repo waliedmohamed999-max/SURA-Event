@@ -106,7 +106,7 @@ async function main() {
   // purely so the UI has something to show for pending/reserved/rented
   // states. Clearly not real tenant data. Safe to skip in production seeding.
   const demoAlreadySeeded = await prisma.application.findUnique({
-    where: { applicationNumber: "GVB-2026-00001" },
+    where: { applicationNumber: "TA-2026-00001" },
   });
 
   if (process.env.SEED_DEMO_DATA !== "false" && !demoAlreadySeeded) {
@@ -127,7 +127,7 @@ async function main() {
     await prisma.shop.update({ where: { id: pendingShopId }, data: { status: "application_pending" } });
     await prisma.application.create({
       data: {
-        applicationNumber: "GVB-2026-00001",
+        applicationNumber: "TA-2026-00001",
         applicantId: demoApplicant.id,
         shopId: pendingShopId,
         businessActivity: "Retail of perfumes and fragrances (demo)",
@@ -144,7 +144,7 @@ async function main() {
     await prisma.shop.update({ where: { id: rentedShopId }, data: { status: "rented" } });
     const rentedApp = await prisma.application.create({
       data: {
-        applicationNumber: "GVB-2026-00002",
+        applicationNumber: "TA-2026-00002",
         applicantId: demoApplicant.id,
         shopId: rentedShopId,
         businessActivity: "Nuts and dried fruit retail (demo)",
@@ -171,7 +171,7 @@ async function main() {
     await prisma.shop.update({ where: { id: reservedShopId }, data: { status: "reserved" } });
     await prisma.application.create({
       data: {
-        applicationNumber: "GVB-2026-00003",
+        applicationNumber: "TA-2026-00003",
         applicantId: demoApplicant.id,
         shopId: reservedShopId,
         businessActivity: "Gift and accessory retail (demo)",
@@ -187,7 +187,7 @@ async function main() {
 
   const existingSuperAdmin = await prisma.adminUser.findFirst({ where: { role: "super_admin" } });
   if (!existingSuperAdmin) {
-    const email = process.env.SEED_ADMIN_EMAIL ?? "admin@globalvillagebahrain.local";
+    const email = process.env.SEED_ADMIN_EMAIL ?? "admin@asiaroad-gvd.local";
     const password = process.env.SEED_ADMIN_PASSWORD ?? randomBytes(9).toString("base64url");
     const passwordHash = await bcrypt.hash(password, 12);
     await prisma.adminUser.create({

@@ -65,7 +65,7 @@ function TrackForm() {
           <input
             value={applicationNumber}
             onChange={(e) => setApplicationNumber(e.target.value)}
-            placeholder="GVB-2026-00001"
+            placeholder="TA-2026-00001"
             dir="ltr"
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent/40"
             required

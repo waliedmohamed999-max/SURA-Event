@@ -11,6 +11,7 @@ import {
   Tag,
   BarChart3,
   Bell,
+  Contact,
 } from "lucide-react";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/site/LanguageSwitcher";
@@ -25,6 +26,7 @@ export function AdminShell({ user, children }: { user: SessionUser; children: Re
   const links = [
     { href: "/admin", label: t("dashboard"), icon: LayoutDashboard, show: can(user.role, "dashboard:read") },
     { href: "/admin/applications", label: t("applications"), icon: FileText, show: can(user.role, "applications:read") },
+    { href: "/admin/customers", label: t("customers"), icon: Contact, show: can(user.role, "applications:read") },
     { href: "/admin/shops/map", label: t("mapEditor"), icon: MapIcon, show: can(user.role, "shops:read") },
     { href: "/admin/categories", label: t("categories"), icon: Tag, show: can(user.role, "categories:read") },
     { href: "/admin/reports", label: t("reports"), icon: BarChart3, show: can(user.role, "reports:read") },
@@ -41,10 +43,10 @@ export function AdminShell({ user, children }: { user: SessionUser; children: Re
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="hidden w-64 shrink-0 border-e border-border bg-surface md:block">
+      <aside className="admin-shell-chrome hidden w-64 shrink-0 border-e border-border bg-surface md:block">
         <div className="p-5">
           <p className="font-display text-lg font-extrabold">
-            GVB <span className="text-accent">Admin</span>
+            TA <span className="text-accent">Admin</span>
           </p>
         </div>
         <nav className="space-y-1 px-3">
@@ -70,7 +72,7 @@ export function AdminShell({ user, children }: { user: SessionUser; children: Re
       </aside>
 
       <div className="flex min-h-screen flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-surface px-5 py-3">
+        <header className="admin-shell-chrome flex items-center justify-between border-b border-border bg-surface px-5 py-3">
           <div>
             <p className="text-sm font-semibold">{user.name}</p>
             <p className="text-xs text-muted">{t(`role.${user.role}`)}</p>

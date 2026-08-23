@@ -15,17 +15,28 @@ type FormValues = z.input<typeof formSchema>;
 
 const DOCUMENT_SLOTS = [
   "docCommercialRegistration",
+  "docIdentityDocument",
+  "docTaxCertificate",
   "docBrandProfile",
   "docProductCatalog",
-  "docIdentityDocument",
 ] as const;
 
 const DOCUMENT_TYPE_BY_SLOT: Record<(typeof DOCUMENT_SLOTS)[number], string> = {
   docCommercialRegistration: "commercial_registration",
+  docIdentityDocument: "identity_document",
+  docTaxCertificate: "tax_certificate",
   docBrandProfile: "brand_profile",
   docProductCatalog: "product_catalog",
-  docIdentityDocument: "identity_document",
 };
+
+// Every applicant must attach these before they can submit — mirrors
+// REQUIRED_DOCUMENT_TYPES in src/lib/validation.ts.
+const REQUIRED_SLOTS: (typeof DOCUMENT_SLOTS)[number][] = [
+  "docCommercialRegistration",
+  "docIdentityDocument",
+  "docTaxCertificate",
+  "docBrandProfile",
+];
 
 export function ApplicationForm({ shop, locale }: { shop: ShopDTO; locale: Locale }) {
   const t = useTranslations("apply");
@@ -34,6 +45,7 @@ export function ApplicationForm({ shop, locale }: { shop: ShopDTO; locale: Local
   const [submitting, setSubmitting] = useState(false);
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [otherFiles, setOtherFiles] = useState<File[]>([]);
+  const [showFileErrors, setShowFileErrors] = useState(false);
 
   const {
     register,
@@ -44,7 +56,15 @@ export function ApplicationForm({ shop, locale }: { shop: ShopDTO; locale: Local
     defaultValues: { agreedToTerms: false },
   });
 
+  const missingRequiredSlots = REQUIRED_SLOTS.filter((slot) => !files[slot]);
+
   const onSubmit = handleSubmit(async (values) => {
+    if (missingRequiredSlots.length > 0) {
+      setShowFileErrors(true);
+      document.getElementById("documents-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
     setSubmitError(null);
     setSubmitting(true);
     try {
@@ -79,7 +99,11 @@ export function ApplicationForm({ shop, locale }: { shop: ShopDTO; locale: Local
         form.append("type", "other");
         uploads.push(fetch(`/api/applications/${applicationId}/documents`, { method: "POST", body: form }));
       }
-      await Promise.allSettled(uploads);
+      const uploadResults = await Promise.allSettled(uploads);
+      const uploadFailed = uploadResults.some((r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok));
+      if (uploadFailed) {
+        console.error("One or more required documents failed to upload for", applicationNumber);
+      }
 
       router.push(`/apply/${shop.id}/confirmation?number=${encodeURIComponent(applicationNumber)}`);
     } catch {
@@ -119,6 +143,9 @@ export function ApplicationForm({ shop, locale }: { shop: ShopDTO; locale: Local
         <Field label={t("city")} error={!!errors.city} errorText={t("fieldRequired")}>
           <input {...register("city")} className={inputClass} />
         </Field>
+        <Field label={t("nationalAddress")} error={!!errors.nationalAddress} errorText={t("fieldRequired")} full>
+          <input {...register("nationalAddress")} className={inputClass} />
+        </Field>
       </FormSection>
 
       <FormSection title={t("businessSection")}>
@@ -140,6 +167,9 @@ export function ApplicationForm({ shop, locale }: { shop: ShopDTO; locale: Local
         <Field label={t("crNumber")} error={!!errors.crNumber} errorText={t("fieldRequired")}>
           <input {...register("crNumber")} className={inputClass} />
         </Field>
+        <Field label={t("ownerMobile")} error={!!errors.ownerMobile} errorText={t("fieldRequired")}>
+          <input {...register("ownerMobile")} className={inputClass} placeholder="+973 ..." />
+        </Field>
       </FormSection>
 
       <FormSection title={t("requirementsSection")}>
@@ -154,19 +184,32 @@ export function ApplicationForm({ shop, locale }: { shop: ShopDTO; locale: Local
         </Field>
       </FormSection>
 
-      <FormSection title={t("documentsSection")}>
-        <div className="col-span-full grid gap-4 sm:grid-cols-2">
-          {DOCUMENT_SLOTS.map((slot) => (
-            <div key={slot}>
-              <label className="mb-1 block text-sm font-medium">{t(slot)}</label>
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
-                onChange={(e) => setFiles((f) => ({ ...f, [slot]: e.target.files?.[0] ?? null }))}
-                className="block w-full text-sm file:me-3 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
-              />
-            </div>
-          ))}
+      <section id="documents-section" className="rounded-2xl border border-border bg-surface p-6">
+        <h2 className="font-display text-lg font-bold">{t("documentsSection")}</h2>
+        <p className="mt-1 text-xs text-muted">{t("documentsRequiredHint")}</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {DOCUMENT_SLOTS.map((slot) => {
+            const isRequired = REQUIRED_SLOTS.includes(slot);
+            const missing = showFileErrors && isRequired && !files[slot];
+            return (
+              <div key={slot}>
+                <label className="mb-1 block text-sm font-medium">
+                  {t(slot)}
+                  {isRequired && <span className="text-red-600"> *</span>}
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                  onChange={(e) => {
+                    setFiles((f) => ({ ...f, [slot]: e.target.files?.[0] ?? null }));
+                    setShowFileErrors(false);
+                  }}
+                  className="block w-full text-sm file:me-3 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
+                />
+                {missing && <p className="mt-1 text-xs text-red-600">{t("fieldRequired")}</p>}
+              </div>
+            );
+          })}
           <div>
             <label className="mb-1 block text-sm font-medium">{t("docOther")}</label>
             <input
@@ -178,7 +221,10 @@ export function ApplicationForm({ shop, locale }: { shop: ShopDTO; locale: Local
             />
           </div>
         </div>
-      </FormSection>
+        {showFileErrors && missingRequiredSlots.length > 0 && (
+          <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{t("documentsMissing")}</p>
+        )}
+      </section>
 
       <div className="flex items-start gap-3">
         <input type="checkbox" id="terms" {...register("agreedToTerms")} className="mt-1 h-4 w-4" />

@@ -1,9 +1,10 @@
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function SiteHeader() {
   const t = useTranslations("nav");
+  const locale = useLocale();
 
   const navLinks = [
     { href: "/#pavilion-map", label: t("exploreShops") },
@@ -16,7 +17,15 @@ export function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 md:px-8">
         <Link href="/" className="font-display text-lg font-extrabold tracking-tight">
-          Global Village <span className="text-accent">Bahrain</span>
+          {locale === "ar" ? (
+            <>
+              طريق <span className="text-accent">آسيا</span>
+            </>
+          ) : (
+            <>
+              Asia <span className="text-accent">Road</span>
+            </>
+          )}
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
           {navLinks.map((link) => (

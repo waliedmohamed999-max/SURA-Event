@@ -24,9 +24,9 @@ const arabicFont = Tajawal({
 });
 
 export const metadata: Metadata = {
-  title: "Global Village Bahrain | Shop Leasing",
+  title: "Asia Road — Global Village Dammam | Shop Leasing",
   description:
-    "Explore the P6-ROA pavilion's interactive map and apply to rent your ideal retail space at Global Village Bahrain.",
+    "Explore the Asia Road pavilion's interactive map and apply to rent your ideal retail space at Global Village Dammam.",
 };
 
 export function generateStaticParams() {

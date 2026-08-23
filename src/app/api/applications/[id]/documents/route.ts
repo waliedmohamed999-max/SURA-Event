@@ -8,6 +8,7 @@ const DOCUMENT_TYPES = new Set<DocumentType>([
   "brand_profile",
   "product_catalog",
   "identity_document",
+  "tax_certificate",
   "other",
 ]);
 

@@ -169,8 +169,8 @@ export const SHOPS: ShopSeed[] = [
 ];
 
 export const PAVILION_STATS = {
-  nameEn: "P6 - ROA Pavilion",
-  nameAr: "جناح P6 - ROA",
+  nameEn: "Asia Road (P6-ROA Pavilion) — Global Village Dammam",
+  nameAr: "طريق آسيا (جناح P6-ROA) — القرية العالمية بالدمام",
   pavilionAreaSqm: 650,
   commercialAreaSqm: 311.6,
   passageAreaSqm: 323,
