@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { randomBytes } from "crypto";
+import bcrypt from "bcryptjs";
 import { PrismaClient, type Prisma } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
@@ -181,6 +183,21 @@ async function main() {
         status: "approved",
       },
     });
+  }
+
+  const existingSuperAdmin = await prisma.adminUser.findFirst({ where: { role: "super_admin" } });
+  if (!existingSuperAdmin) {
+    const email = process.env.SEED_ADMIN_EMAIL ?? "admin@globalvillagebahrain.local";
+    const password = process.env.SEED_ADMIN_PASSWORD ?? randomBytes(9).toString("base64url");
+    const passwordHash = await bcrypt.hash(password, 12);
+    await prisma.adminUser.create({
+      data: { name: "Super Admin", email, passwordHash, role: "super_admin" },
+    });
+    console.log("\nDefault Super Admin created — save these credentials, they will not be shown again:");
+    console.log(`  Email:    ${email}`);
+    console.log(`  Password: ${password}\n`);
+  } else {
+    console.log("Super Admin already exists, skipping.");
   }
 
   console.log("Seed complete.");
